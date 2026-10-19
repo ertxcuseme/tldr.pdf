@@ -66,6 +66,7 @@ header .narrow-only{display:none!important}
 .tool-select .a{pointer-events:visiblePainted;cursor:move}
 .pg canvas.ink{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
 .tool-select .t{pointer-events:auto;cursor:move}
+.tool-text .t{pointer-events:auto;cursor:text}   /* Text tool over a text box: click to type in it */
 .t.sel{outline:1px dashed var(--acc)}
 .a.sel{filter:drop-shadow(0 0 2px var(--acc))}
 .t[contenteditable]{outline:1px solid var(--acc);pointer-events:auto;cursor:text}
@@ -132,6 +133,11 @@ body.phone #ph{position:fixed;inset:0;display:flex;flex-direction:column;align-i
 #scap .hlx{background:#5fd68a;padding:1px 5px;border-radius:2px}
 #scd .row>button,#scd .stk button{font-size:13px;padding-left:10px;padding-right:10px}
 #scd .stk{display:inline-flex;flex-direction:column;gap:6px}
+#scd .scbx{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+#scd .scc1,#scd .scc3{display:grid;gap:8px;grid-auto-rows:1fr}
+#scd .scbx button{width:100%;height:100%;margin:0;font-size:13px;padding:7px 8px;line-height:1.25}
+#scd .scbx button.big{font-size:15px;font-weight:600}
+@media (max-width:640px){#scd .scbx{grid-template-columns:1fr}#scd .scbx #scex1{min-height:72px}}
 #scd .stk button{width:100%}
 #scd,#scd button,#scd input,#scd select,#scd summary{font-family:'Courier New',Courier,'Liberation Mono',monospace}
 #ver{color:var(--mute);font-size:12px;font-weight:600;margin-left:-4px;align-self:center}
@@ -195,8 +201,9 @@ header output{min-width:34px;color:var(--text);font-size:12px}
 .b[data-tool]{background:#fff;color:#111;border-color:#c9cfdd}
 .b[data-tool]:hover,#scb:hover{background:#eaf0ff}
 #scb{background:#fff;color:#111;border-color:#c9cfdd;font-family:'Courier New',Courier,'Liberation Mono',monospace;font-weight:700}
-.b[data-tool].on{background:var(--acc);border-color:var(--acc);color:#fff}
-.b[data-tool].on:hover{background:#7aa0ff}
+.b[data-tool].on{background:#e6d38c;border-color:#b8a35a;color:#1a1a1a;box-shadow:inset 0 0 0 1px #b8a35a}   /* selected tool: soft, muted yellow */
+.b[data-tool].on:hover{background:#eddc9c}
+.b[data-tool].on svg.ic .ul{stroke:#0006}
 .b svg.ic .ul{fill:var(--ulc,transparent);stroke:#0005;stroke-width:.8}
 .b.on svg.ic .ul{stroke:#fff}
 .b svg.ic{width:16px;height:16px;vertical-align:-3px;margin-right:5px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
@@ -375,8 +382,12 @@ body.tool-edittext .pg{touch-action:none;cursor:text}
   <details id="scgd"><summary>Cast sheet preview (hover a scene for its details)</summary><div id="scgrid"></div></details>
   <label class="feel" style="margin-top:8px"><input type="checkbox" id="scidx" style="flex:none"> Add scene index pages (full headings and who is in each) to exports</label>
   <p id="scsd" class="mut" style="font-size:12px;margin:6px 0 2px"></p>
-  <div class="row"><button id="scmg" title="Adds a shooting-date column to the cast sheet, taken from the one-liner pages in this PDF (use Add pages to bring them in)">Merge cast sheet with one-liner</button><button id="scdd" title="Numbers the characters like the day out of days pages in this PDF and puts them in the same order, on the script, cast sheet and Excel">Order characters by day out of days</button></div>
-  <div class="row"><button id="scap" class="pri">Apply to script</button><button id="sccl">Remove marks</button><button id="scex1" style="margin-left:auto" title="The script with highlights and squares, plus the cast sheet pages at the end">Markup script + add cast sheet</button><span class="stk"><button id="scex2" title="Only the cast sheet pages, as a PDF">Cast sheet only (PDF)</button><button id="scex3" title="Only the cast sheet, as a spreadsheet: one row per scene with the full scene heading, one column per character">Cast sheet only (Excel)</button></span><button id="scx">Close</button></div>
+  <div class="scbx">
+    <div class="scc1"><button id="scmg" title="Adds a shooting-date column to the cast sheet, taken from the one-liner pages in this PDF (use Add pages to bring them in)">Merge cast sheet with one-liner</button><button id="scdd" title="Numbers the characters like the day out of days pages in this PDF and puts them in the same order, on the script, cast sheet and Excel">Order characters by day out of days</button><button id="scap" class="pri">Apply to script</button><button id="sccl">Remove marks</button></div>
+    <button id="scex1" class="big" title="Marks up the script and puts the cast sheet pages at the end of this file, so you can look at them and save them with Save PDF or Flatten &amp; export. Press again after changes to replace them.">Markup script<br>+ add cast sheet</button>
+    <div class="scc3"><button id="scex2" class="big" title="Saves only the cast sheet pages, as a PDF">Cast sheet only<br>(PDF)</button><button id="scex3" class="big" title="Saves only the cast sheet, as a spreadsheet: one row per scene with the full scene heading, one column per character">Cast sheet only<br>(Excel)</button></div>
+  </div>
+  <div class="row"><button id="scx">Close</button></div>
 </dialog>
 <div id="toast" hidden role="status"></div>
 <dialog id="te"><h2>Edit text</h2>
@@ -405,7 +416,7 @@ body.tool-edittext .pg{touch-action:none;cursor:text}
 </div>
 <script>
 const $=s=>document.querySelector(s);
-const APP_V=21;   // bump with every export; shown next to the title and used in the delivered folder name
+const APP_V=26;   // bump with every export; shown next to the title and used in the delivered folder name
 $('#ver').textContent='V'+String(APP_V).padStart(2,'0');
 const V=$('#view'),T=$('#thumbs');
 let docs=[],pages=[],tool='select',scale=1.3,sel=null,hist=[],fname='edited.pdf',drag=null,from=null;
@@ -483,11 +494,11 @@ function build(){
     const [W,H]=dims(p);
     const el=document.createElement('div');
     el.className='pg';el.dataset.i=i;el.style.width=W*scale+'px';el.style.height=H*scale+'px';
-    el.innerHTML='<canvas></canvas><div class="fm"></div><svg class="ov"></svg><svg class="hl"></svg><canvas class="ink"></canvas><div class="tx"></div>';
+    el.innerHTML='<canvas></canvas><div class="fm"></div><svg class="ov"></svg><svg class="hl"></svg><canvas class="ink"></canvas><svg class="ov pn"></svg><div class="tx"></div>';
     V.append(el);io.observe(el);
     const th=document.createElement('div');
     th.className='th';th.draggable=true;th.dataset.i=i;th.style.height=H*110/W+'px';
-    th.innerHTML=`<canvas></canvas><svg class="tov"></svg><svg class="thl"></svg><canvas class="ink" width="1" height="1"></canvas><span>${i+1}</span><div class="ta"><button data-a="rot" title="Rotate page" aria-label="Rotate page ${i+1}">⟳</button><button data-a="del" title="Delete page" aria-label="Delete page ${i+1}">✕</button></div>`;
+    th.innerHTML=`<canvas></canvas><svg class="tov"></svg><svg class="thl"></svg><canvas class="ink" width="1" height="1"></canvas><svg class="tpn"></svg><span>${i+1}</span><div class="ta"><button data-a="rot" title="Rotate page" aria-label="Rotate page ${i+1}">⟳</button><button data-a="del" title="Delete page" aria-label="Delete page ${i+1}">✕</button></div>`;
     T.append(th);io.observe(th);
   });
   pages.forEach((_,i)=>overlay(i));
@@ -498,13 +509,13 @@ function build(){
 
 function overlay(i){
   const p=pages[i],el=V.children[i];if(!el)return;
-  const [W,H]=dims(p),svg=el.querySelector('svg.ov'),hl=el.querySelector('svg.hl'),tx=el.querySelector('.tx');
-  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);hl.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const [W,H]=dims(p),svg=el.querySelector('svg.ov'),hl=el.querySelector('svg.hl'),tx=el.querySelector('.tx'),pn=el.querySelector('svg.pn');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);pn.setAttribute('viewBox',`0 0 ${W} ${H}`);hl.setAttribute('viewBox',`0 0 ${W} ${H}`);
   const isSel=k=>sel&&sel[0]==i&&sel[1]==k?' sel':'';
   const box=(x,y,w,h)=>{const [x1,y1]=fwd(p,x,y),[x2,y2]=fwd(p,x+w,y+h);return[Math.min(x1,x2),Math.min(y1,y2),Math.abs(x2-x1),Math.abs(y2-y1)]};
   // Highlights live in their own multiply-blended layer: dark text stays dark, same-color
   // highlights merge into one shape (no double darkening), different colors mix.
-  let s='',m='';const groups={};
+  let s='',m='',d='';const groups={};   // d: pen strokes, in their own layer above the highlights
   if(fOpen)hits.forEach((h,k)=>{
     if(h.pi!=i)return;
     h.rects.forEach(r=>{
@@ -529,10 +540,10 @@ function overlay(i){
       if(a.sk){const f=w/11,d=SKI[a.sk]||SKI[1];s+=`<g transform="translate(${x} ${y}) scale(${f})" fill="#000" stroke="none">${d.f.map(q=>`<path d="${q}"/>`).join('')}<path d="${d.s.join('')}" fill="none" stroke="#000" stroke-width="1.1" stroke-linecap="round"/></g>`}
       else s+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="${a.c}"/>`;
     }else if(a.t=='path'){
-      s+=`<polyline data-k="${k}" class="a${isSel(k)}" fill="none" stroke="${a.c}" stroke-opacity="${oa(a)}" stroke-width="${a.s}" stroke-linecap="round" stroke-linejoin="round" points="${a.p.map(q=>fwd(p,q[0],q[1]).join(',')).join(' ')}"/>`;
+      d+=`<polyline data-k="${k}" class="a${isSel(k)}" fill="none" stroke="${a.c}" stroke-width="${a.s}" stroke-linecap="round" stroke-linejoin="round" points="${a.p.map(q=>fwd(p,q[0],q[1]).join(',')).join(' ')}"/>`;
     }
   });
-  svg.innerHTML=s;
+  svg.innerHTML=s;pn.innerHTML=d;
   hl.innerHTML=m+Object.values(groups).map(g=>`<path d="${g.d}" fill="${g.c}" fill-opacity="${g.o}"/>`).join('');
   tx.innerHTML='';
   p.ann.forEach((a,k)=>{
@@ -558,7 +569,7 @@ function thumbSync(i){
   const p=pages[i],th=T.children[i],el=V.children[i];if(!p||!th||!th.querySelector('.tov'))return;
   const [W,H]=dims(p),o=th.querySelector('.tov'),h=th.querySelector('.thl'),ns='http://www.w3.org/2000/svg',src=el.querySelector('svg.ov'),shl=el.querySelector('svg.hl');
   o.setAttribute('viewBox',`0 0 ${W} ${H}`);h.setAttribute('viewBox',`0 0 ${W} ${H}`);
-  o.innerHTML=src.innerHTML;o.querySelectorAll('.rs').forEach(n=>n.remove());o.querySelectorAll('[stroke-dasharray]').forEach(n=>n.removeAttribute('stroke-dasharray'));
+  o.innerHTML=src.innerHTML;{const tp=th.querySelector('.tpn'),sp=el.querySelector('svg.pn');if(tp&&sp){tp.setAttribute('viewBox',`0 0 ${W} ${H}`);tp.innerHTML=sp.innerHTML;tp.querySelectorAll('[stroke-dasharray]').forEach(n=>n.removeAttribute('stroke-dasharray'))}}o.querySelectorAll('.rs').forEach(n=>n.remove());o.querySelectorAll('[stroke-dasharray]').forEach(n=>n.removeAttribute('stroke-dasharray'));
   h.innerHTML=shl.innerHTML;
   p.ann.forEach(a=>{if(a.t!='text'||!a.text)return;const [x,y]=fwd(p,a.x,a.y),t=document.createElementNS(ns,'text');
     t.setAttribute('x',x);t.setAttribute('y',y);t.setAttribute('font-size',a.s);t.setAttribute('fill',a.c);t.setAttribute('fill-opacity',oa(a));t.style.fontFamily=fam(a.f);t.style.dominantBaseline='hanging';
@@ -568,11 +579,15 @@ function thumbSync(i){
   else if(ic.width>1){ic.width=1;ic.height=1}
 }
 
-function edit(i,k,fresh){
+function edit(i,k,fresh,at){
   const d=V.children[i].querySelector(`.t[data-k="${k}"]`);if(!d)return;
   d.contentEditable='true';d.focus();
   const r=document.createRange();r.selectNodeContents(d);
   const g=getSelection();g.removeAllRanges();g.addRange(r);
+  if(at){   // clicked into an existing box: put the cursor where you clicked instead of selecting everything
+    let c=null;try{c=document.caretRangeFromPoint?document.caretRangeFromPoint(at[0],at[1]):null;if(!c&&document.caretPositionFromPoint){const q=document.caretPositionFromPoint(at[0],at[1]);if(q){c=document.createRange();c.setStart(q.offsetNode,q.offset)}}}catch(e){}
+    g.removeAllRanges();if(c&&d.contains(c.startContainer)){c.collapse(true);g.addRange(c)}else{r.collapse(false);g.addRange(r)}
+  }
   let snapped=!!fresh;
   const txt=()=>d.innerText.replace(/\n+$/,'');
   d.oninput=()=>{
@@ -594,6 +609,23 @@ function edit(i,k,fresh){
 
 function paintToolUL(){
   document.querySelectorAll('[data-tool]').forEach(b=>{const c=tc[b.dataset.tool];if(c)b.style.setProperty('--ulc',c)});
+  toolCursors();
+}
+// The mouse pointer on the page shows the same picture as the tool's button (with its color bar),
+// outlined in white so it shows on dark and light pages. The point that counts is the tool's tip.
+const CUR_TIP={text:[3,3],draw:[4,17.5],highlight:[7,15.5],whiteout:[5,15],edittext:[12.5,19.5]};
+function toolCursors(){
+  let css='';
+  for(const [t,[hx,hy]] of Object.entries(CUR_TIP)){
+    const ic=document.querySelector(`[data-tool="${t}"] svg.ic`);if(!ic)continue;
+    const inner=ic.innerHTML,col=tc[t]||'#ffffff';
+    const halo=inner.replace(/class="ul"/g,'fill="#fff"'),main=inner.replace(/class="ul"/g,`fill="${col}" stroke="#333" stroke-width=".8"`);
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="-2 -2 28 28" fill="none" stroke-linecap="round" stroke-linejoin="round"><g stroke="#fff" stroke-width="4.6">${halo}</g><g stroke="#111" stroke-width="1.9">${main}</g></svg>`;
+    const k=32/28,x=Math.round((hx+2)*k),y=Math.round((hy+2)*k);
+    css+=`body.tool-${t} .pg{cursor:url("data:image/svg+xml,${encodeURIComponent(svg)}") ${x} ${y},crosshair}\n`;
+  }
+  let st=document.getElementById('curcss');if(!st){st=document.createElement('style');st.id='curcss';document.head.append(st)}
+  st.textContent=css;
 }
 function setTool(t){
   tool=t;document.body.className='tool-'+t;
@@ -614,7 +646,7 @@ function setSide(open){
 $('#sidetg').onclick=()=>setSide($('#side').classList.contains('closed'));
 try{if(localStorage.getItem('hoedobe.pages')==='0')setSide(false)}catch(e){}
 // ---- Colors and opacity ----
-const COLORED=['text','draw','highlight','whiteout'],OPAQ=['text','draw','sign','highlight'];
+const COLORED=['text','draw','highlight','whiteout'],OPAQ=['text','sign','highlight'];   // the pen is always solid
 const opv={text:1,draw:1,sign:1,highlight:.8};
 const oa=a=>a.o==null?1:a.o;
 let colTool='text',cSnap=false,oSnap=false,editing=false;
@@ -643,7 +675,7 @@ const selAnn=()=>sel&&pages[sel[0]]?pages[sel[0]].ann[sel[1]]||null:null;
 const curColor=()=>{const a=tool=='select'?selAnn():null;return(a&&a.c)||tc[COLORED.includes(tool)?tool:colTool]};
 function opTarget(){
   const a=tool=='select'?selAnn():null;
-  if(a)return(a.t=='text'||a.t=='path'||a.t=='img'||(a.t=='rect'&&a.hl))?{a}:null;
+  if(a)return(a.t=='text'||a.t=='img'||(a.t=='rect'&&a.hl))?{a}:null;
   return OPAQ.includes(tool)?{tool}:null;
 }
 function setColor(h){
@@ -752,6 +784,9 @@ V.addEventListener('pointerdown',e=>{
   const i=+el.dataset.i,p=pages[i];
   const P=ev=>{const r=el.getBoundingClientRect();return inv(p,(ev.clientX-r.left)/scale,(ev.clientY-r.top)/scale)};
   const [x,y]=P(e),c=tc[tool];
+  // Forgot to switch tools? With Select (on empty page) or Text, a mouse drag turns into a highlight.
+  const autoHL=e.pointerType!='touch'&&((tool=='text'&&!e.target.closest('.t'))||(tool=='select'&&!e.target.closest('.t,.a,.rs,.fm input,.fm select,.fm textarea')));
+  if(autoHL)pendHL={i,P,x0:x,y0:y,cx:e.clientX,cy:e.clientY};
   if(tool=='select'){
     const t=e.target.closest('.t,.a,.rs'),prev=sel;
     document.querySelectorAll('.sel').forEach(n=>n.classList.remove('sel'));
@@ -765,14 +800,22 @@ V.addEventListener('pointerdown',e=>{
     if(prev&&(!sel||prev[0]!=sel[0]||prev[1]!=sel[1])){const q=pages[prev[0]];if(q&&needsRe(q.ann[prev[1]]))overlay(prev[0])}
     syncUI();
   }else if(tool=='draw'){
-    snap();noteUse(c);p.ann.push({t:'path',p:[[x,y],[x,y]],s:+$('#pw').value||2,c,o:opv.draw});
+    snap();noteUse(c);p.ann.push({t:'path',p:[[x,y],[x,y]],s:+$('#pw').value||2,c});
     drag={i,k:p.ann.length-1,P,mode:'draw'};overlay(i);
   }else if(tool=='highlight'||tool=='whiteout'){
     snap();if(tool=='highlight')noteUse(c);p.ann.push(tool=='highlight'?{t:'rect',x,y,w:0,h:0,c,hl:true,o:opv.highlight}:{t:'rect',x,y,w:0,h:0,c,hl:false});
     drag={i,k:p.ann.length-1,P,x0:x,y0:y,mode:'rect'};
   }
 });
+let pendHL=null,noClick=false;
 addEventListener('pointermove',e=>{
+  if(pendHL&&!drag&&Math.hypot(e.clientX-pendHL.cx,e.clientY-pendHL.cy)>8){
+    const q=pendHL,p=pages[q.i];pendHL=null;noClick=true;
+    setTool('highlight');snap();noteUse(tc.highlight);
+    p.ann.push({t:'rect',x:q.x0,y:q.y0,w:0,h:0,c:tc.highlight,hl:true,o:opv.highlight});
+    drag={i:q.i,k:p.ann.length-1,P:q.P,x0:q.x0,y0:q.y0,mode:'rect'};
+    toast('Switched to Highlight.');
+  }
   if(!drag)return;
   const p=pages[drag.i],a=p.ann[drag.k];if(!a)return;
   if(drag.mode=='resize'){
@@ -793,6 +836,7 @@ addEventListener('pointermove',e=>{
   overlay(drag.i);
 });
 addEventListener('pointerup',()=>{
+  pendHL=null;setTimeout(()=>{noClick=false},0);
   if(drag&&drag.mode=='rect'){
     const p=pages[drag.i],a=p.ann[drag.k];
     if(a&&a.w<2&&a.h<2){p.ann.splice(drag.k,1);overlay(drag.i)}
@@ -801,6 +845,7 @@ addEventListener('pointerup',()=>{
   drag=null;
 });
 V.addEventListener('click',e=>{
+  if(noClick){noClick=false;return}
   if((tool!='text'&&tool!='sign')||e.target.isContentEditable)return;
   const el=e.target.closest('.pg');if(!el)return;
   const i=+el.dataset.i,p=pages[i],r=el.getBoundingClientRect();
@@ -810,6 +855,8 @@ V.addEventListener('click',e=>{
     snap();p.ann.push({t:'img',sid:s.id,x,y,w,h,o:opv.sign});
     setTool('select');sel=[i,p.ann.length-1];overlay(i);syncUI();return;
   }
+  const old=e.target.closest('.t');
+  if(old){edit(i,+old.dataset.k,false,[e.clientX,e.clientY]);return}   // Text tool on a box you added: type in it
   const [x,y]=inv(p,(e.clientX-r.left)/scale,(e.clientY-r.top)/scale);
   snap();noteUse(tc.text);p.ann.push({t:'text',x,y,text:'',s:+$('#fs').value||14,c:tc.text,o:opv.text});
   overlay(i);edit(i,p.ann.length-1,true);
@@ -1570,6 +1617,28 @@ async function initAutosave(){
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&A.unsaved){draftSave();if(A.dir&&A.dirty)fileSave()}});
 addEventListener('pagehide',()=>{if(A.unsaved)draftSave()});
 
+// Some PDFs (schedules, studio scripts) carry an owner lock: they open with no password, but their pages are
+// scrambled inside the file. Copying those pages as they are gives a broken export that viewers call password-protected.
+// So a locked file is unlocked in memory first. The unlocking library loads only when a locked file turns up.
+const UNLOCK_URL='https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.11.1/dist/pdf-lib.min.js';
+let unlockLib=null;
+async function srcDoc(d){
+  const D=docs[d],{PDFDocument}=PDFLib;
+  if(D.plain)return PDFDocument.load(D.plain,{ignoreEncryption:true});   // already unlocked
+  const doc=await PDFDocument.load(D.bytes,{ignoreEncryption:true});
+  if(!doc.isEncrypted)return doc;
+  try{
+    if(!unlockLib){
+      const r=await fetch(UNLOCK_URL);if(!r.ok)throw new Error('download');
+      const ex={};new Function('exports','module',await r.text())(ex,{exports:ex});unlockLib=ex;   // kept apart from the main PDF library
+    }
+    const u=await unlockLib.PDFDocument.load(D.bytes,{password:''});
+    for(const [ref,o] of u.context.enumerateIndirectObjects())if(o&&o.get&&o.get(unlockLib.PDFName.of('Filter'))==unlockLib.PDFName.of('Standard')&&o.get(unlockLib.PDFName.of('O')))u.context.delete(ref);   // the leftover lock entry
+    D.plain=await u.save({useObjectStreams:false});
+  }catch(e){throw new Error('this PDF is locked against editing, and the tool that unlocks it could not be downloaded. Connect to the internet once and try again.')}
+  return PDFDocument.load(D.plain,{ignoreEncryption:true});
+}
+
 // Export
 async function buildPdf(opts={}){
   {
@@ -1578,7 +1647,8 @@ async function buildPdf(opts={}){
     const fontFor=async k=>fonts[k||'h']||(fonts[k]=await out.embedFont(k=='c'?StandardFonts.Courier:StandardFonts.TimesRoman));
     const col=h=>rgb(parseInt(h.slice(1,3),16)/255,parseInt(h.slice(3,5),16)/255,parseInt(h.slice(5,7),16)/255);
     for(const p of pages){
-      if(!src[p.d])src[p.d]=await PDFDocument.load(docs[p.d].bytes,{ignoreEncryption:true});
+      if(opts.cast&&SD.kc&&SD.kc[p.d+':'+p.n]=='cast')continue;   // cast sheet pages added earlier: the fresh one goes at the end
+      if(!src[p.d])src[p.d]=await srcDoc(p.d);
       const [cp]=await out.copyPages(src[p.d],[p.n-1]);
       const tot=((cp.getRotation().angle+p.rot)%360+360)%360;
       cp.setRotation(degrees(tot));out.addPage(cp);
@@ -1598,7 +1668,7 @@ async function buildPdf(opts={}){
       if(opts.flat&&nf)await flatten(p,pg,cp,vp,tot,font);
       const P=(x,y)=>{const [u,v]=fwd(p,x,y);return vp.convertToPdfPoint(u,v)};
       const f3=n=>n.toFixed(3),pt=(x,y)=>{const q=P(x,y);return f3(q[0])+' '+f3(-q[1])};
-      // Layer order matches the editor: whiteout, pen and signatures, then highlights (multiply), then text.
+      // Layer order matches the editor: whiteout and signatures, then highlights (multiply), then the pen (solid, on top), then text.
       cp.pushOperators(setLineJoin(LineJoinStyle.Round));
       for(const a of p.ann){
         if(a.t=='rect'&&!a.hl){
@@ -1608,8 +1678,6 @@ async function buildPdf(opts={}){
           const [x1,y1]=P(a.x,a.y),[x2,y2]=P(a.x+a.w,a.y+a.h),o={x:Math.min(x1,x2),y:Math.min(y1,y2),width:Math.abs(x2-x1),height:Math.abs(y2-y1),color:col(a.c),borderWidth:0};
           if(a.sk){scIconPdf(cp,a.sk,Math.min(x1,x2),Math.max(y1,y2),a.w/11,rgb(0,0,0))}
           else cp.drawRectangle(o);
-        }else if(a.t=='path'){
-          cp.drawSvgPath('M'+a.p.map(q=>pt(q[0],q[1])).join(' L'),{x:0,y:0,scale:1,borderColor:col(a.c),borderWidth:a.s,borderOpacity:oa(a),borderLineCap:1});
         }else if(a.t=='img'){
           if(!srcs[a.sid])continue;
           if(!emb[a.sid])emb[a.sid]=await out.embedPng(srcs[a.sid]);
@@ -1631,6 +1699,9 @@ async function buildPdf(opts={}){
         const pt=await inkPatch(p,pg,a,P);if(!pt)continue;
         const im=await out.embedPng(pt.png);cp.drawImage(im,{x:pt.x,y:pt.y,width:pt.w,height:pt.h});
       }
+      // Pen strokes go over everything else, fully solid: you only see the pen color.
+      cp.pushOperators(setLineJoin(LineJoinStyle.Round));
+      for(const a of p.ann)if(a.t=='path')cp.drawSvgPath('M'+a.p.map(q=>pt(q[0],q[1])).join(' L'),{x:0,y:0,scale:1,borderColor:col(a.c),borderWidth:a.s,borderLineCap:1});
       for(const a of p.ann){
         if(a.t!='text')continue;
         const [u,v]=fwd(p,a.x,a.y),tf=await fontFor(a.f);
@@ -2646,7 +2717,7 @@ $('#scal').addEventListener('change',e=>{
   SC.dec[a.m.sk]=s.value;scResolve(SC.scenes,SC.cc||new Map());scDirtyNow();
 });
 async function scExport(kind){
-  const btn=$(kind=='all'?'#scex1':'#scex2'),old=btn.textContent,base=fname.replace(/-edited\.pdf$|\.pdf$/i,''),name=base+(kind=='all'?'-script-marked.pdf':'-cast-sheet.pdf');
+  const btn=$(kind=='all'?'#scex1':'#scex2'),old=btn.innerHTML,base=fname.replace(/-edited\.pdf$|\.pdf$/i,''),name=base+(kind=='all'?'-script-marked.pdf':'-cast-sheet.pdf');
   let h=null;
   if(window.showSaveFilePicker&&!matchMedia('(pointer:coarse)').matches){
     try{h=await showSaveFilePicker({suggestedName:name,types:[{description:'PDF',accept:{'application/pdf':['.pdf']}}]})}
@@ -2661,9 +2732,27 @@ async function scExport(kind){
     if(h){const w=await h.createWritable();await w.write(blob);await w.close();toast('Saved.');return}
     await shareFile(blob,name);
   }catch(err){alert('Could not export: '+err.message)}
-  finally{btn.disabled=false;btn.textContent=old}
+  finally{btn.disabled=false;btn.innerHTML=old}
 }
-$('#scex1').onclick=()=>scExport('all');
+
+// Add the cast sheet as pages in the file open here (replacing any cast sheet pages added before).
+async function scInsertCast(){
+  const btn=$('#scex1'),old=btn.innerHTML;btn.disabled=true;btn.textContent='Working…';
+  try{
+    await scApply();
+    const bytes=await scCastPdf(),pdf=await pdfjsLib.getDocument({data:bytes.slice()}).promise;
+    await scKinds();
+    snap();
+    const had=pages.length;pages=pages.filter(p=>SD.kc[p.d+':'+p.n]!=='cast');const gone=had-pages.length;
+    const d=docs.push({bytes,pdf})-1;
+    for(let n=1;n<=pdf.numPages;n++){const pg=await pdf.getPage(n),v=pg.getViewport({scale:1});pages.push({d,n,rot:0,w:v.width,h:v.height,ann:[]});SD.kc[d+':'+n]='cast'}
+    SC.sig=scSig();build();touch();
+    toast((gone?'Cast sheet pages replaced':'Cast sheet added')+` at the end (${pdf.numPages} page${pdf.numPages>1?'s':''}). Save PDF or Flatten & export to keep them.`);
+    setTimeout(()=>{const el=document.querySelector(`.pg[data-i="${pages.length-pdf.numPages}"]:not(.th)`);if(el)el.scrollIntoView({behavior:'smooth'})},300);
+  }catch(err){alert('Could not add the cast sheet: '+err.message)}
+  finally{btn.disabled=false;btn.innerHTML=old}
+}
+$('#scex1').onclick=scInsertCast;
 $('#scex2').onclick=()=>scExport('cast');
 // Cast sheet as an Excel workbook, written here with no outside library (an .xlsx is a zip of small XML files).
 function xZip(files){
@@ -2711,7 +2800,7 @@ function xBook(sheets){
   return xZip(files);
 }
 async function scXlsx(){
-  const btn=$('#scex3'),old=btn.textContent;btn.disabled=true;btn.textContent='Working…';
+  const btn=$('#scex3'),old=btn.innerHTML;btn.disabled=true;btn.textContent='Working…';
   try{
     if(SC.sig!==scSig()){SC.sig=scSig();await scScan()}
     const chars=SC.chars.filter(c=>c.on),scenes=SC.scenes;
@@ -2731,7 +2820,7 @@ async function scXlsx(){
     const blob=xBook([{name:'Cast sheet',rows,widths:w1,freeze:true,filter:`A1:${col(nf-1)}${rows.length}`},{name:'Characters',rows:k,widths:[30,8,9,15,17,18]}]);
     await shareFile(blob,base+'-cast-sheet.xlsx');
   }catch(err){alert('Could not export: '+err.message)}
-  finally{btn.disabled=false;btn.textContent=old}
+  finally{btn.disabled=false;btn.innerHTML=old}
 }
 $('#scex3').onclick=scXlsx;
 $('#fmc').onclick=()=>{const q=$('#fq').value.trim();if(!q)return;if(!SC.is){toast('Script mode needs a screenplay.');return}if(scAddSeed(q)){scOpen();toast(`Added “${q}” as a character.`)}};
@@ -2749,7 +2838,8 @@ async function scKinds(){
     if(SD.kc[k]===undefined){
       const rows=scGroup(await getLines(p)),T=rows.map(r=>r.segs.map(scTxt).join(' ')).join('\n');
       let kind='';
-      if(/Day Out of Days/i.test(T)&&/Shooting Day/i.test(T))kind='dood';
+      if(/Cast sheet - /.test(T)||/Scene index[\s\S]*Names are in their character colors/.test(T))kind='cast';   // pages this app made
+      else if(/Day Out of Days/i.test(T)&&/Shooting Day/i.test(T))kind='dood';
       else if(/ONELINE SCHEDULE|BEGIN DAY\s*#|END DAY\s*#/i.test(T))kind='one';
       else{let n=0;for(const r of rows){const t=r.segs.map(q=>scTxt(q).trim());if(t.length>=4&&/^\d{1,3}[A-Z]{0,2}$/.test(t[0])&&/^(INT|EXT|I\/E)/i.test(t[1])&&t.some(x=>/^[DN]\d{1,2}(\s|$)/.test(x)))n++}if(n>=3)kind='one'}
       SD.kc[k]=kind;

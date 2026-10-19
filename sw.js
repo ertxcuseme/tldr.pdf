@@ -1,12 +1,13 @@
 // TL;DR.pdf offline helper. Keeps a copy of the app and its libraries so it opens with no signal.
-const V = 'tldr-v11';   // bump with the app version
+const V = 'tldr-v12';   // bump with the app version
 const CORE = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-32.png', './favicon.ico', './icon-512.png', './apple-touch-icon.png'];
 const LIBS = [
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js',
+  'https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.11.1/dist/pdf-lib.min.js'   // unlocks locked PDFs before export
 ];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(V).then(c => Promise.allSettled([...CORE, ...LIBS].map(u => c.add(new Request(u, { cache: 'reload' }))))).then(() => self.skipWaiting()));
